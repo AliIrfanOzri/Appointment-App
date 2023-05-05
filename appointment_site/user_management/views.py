@@ -6,9 +6,9 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from rest_framework import status, generics
 from rest_framework.views import APIView
-from .models import Patient, Counsellor, Appointment
+from .models import Patient, Counsellor, Appointment, User
 from datetime import datetime
-from .serializers import PatientSerializer, CounsellorSerializer, AppointmentSerializer
+from .serializers import *
 
 class ActiveDataOfAllView(APIView):
     def get(self, request, format=None):
