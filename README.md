@@ -20,3 +20,5 @@ run "python manage.py runserver"
 ensure server is running 127.0.0.1:8000
 
 opne postman and start hitting api with help documnet and info send in email
+
+Note: For run unit tests : run "python manage.py test user_management"
