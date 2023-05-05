@@ -9,7 +9,7 @@ source env/bin/activate
 
 go to clone project : run = "cd Appointment-App/appointment_site/"
 
-run "pip install -m requirements.txt
+run "pip install -r requirements.txt"
 
 run "python manage.py migrate"
 
