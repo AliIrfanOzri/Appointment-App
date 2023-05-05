@@ -2,11 +2,12 @@
 
 install python3.8
 
+
 python3 -m venv env
 
 source env/bin/activate
 
-go to clone project 
+go to clone project : run = "cd Appointment-App/appointment_site/"
 
 run "pip install -m requirements.txt
 
