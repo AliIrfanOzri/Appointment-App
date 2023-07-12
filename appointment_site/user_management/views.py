@@ -51,21 +51,25 @@ class PatientViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs):
-        patient = request.data.get('user')
-        user_obj = User.objects.filter(email=patient["email"])
-        if user_obj:
-            data = request.data.copy()
-            data['user_email'] = patient["email"]
-            user = User.objects.get(email=patient["email"])
-            serializer = ExistUserPatientSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save(user=user)
-        else:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+        try:
+            patient = request.data.get('user')
+            user_obj = User.objects.filter(email=patient["email"])
+            if user_obj:
+                data = request.data.copy()
+                data['user_email'] = patient["email"]
+                user = User.objects.get(email=patient["email"])
+                serializer = ExistUserPatientSerializer(data=data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save(user=user)
+            else:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            error = "patient with this email already exist" if e == "UNIQUE constraint failed: user_management_patient.user_id" else e
+            return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def active_patient(self, request):
@@ -90,22 +94,26 @@ class CounsellorViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs):
-        patient = request.data.get('user')
-        user_obj = User.objects.filter(email=patient["email"])
-        if user_obj:
-            data = request.data.copy()
-            data['user_email'] = patient["email"]
-            user = User.objects.get(email=patient["email"])
-            serializer = ExistUserCounsellorSerializer(data=data)
-            serializer.is_valid(raise_exception=True)
+        try:
+            patient = request.data.get('user')
+            user_obj = User.objects.filter(email=patient["email"])
+            if user_obj:
+                data = request.data.copy()
+                data['user_email'] = patient["email"]
+                user = User.objects.get(email=patient["email"])
+                serializer = ExistUserCounsellorSerializer(data=data)
+                serializer.is_valid(raise_exception=True)
 
-            serializer.save(user=user)
-        else:
-            serializer = self.get_serializer(data=request.data)
-            serializer.is_valid(raise_exception=True)
-            serializer.save()
-        
-        return Response(serializer.data, status=status.HTTP_201_CREATED)
+                serializer.save(user=user)
+            else:
+                serializer = self.get_serializer(data=request.data)
+                serializer.is_valid(raise_exception=True)
+                serializer.save()
+            
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
+        except Exception as e:
+            error = "counsellor with this email already exist" if e == "UNIQUE constraint failed: user_management_counsellor.user_id" else e
+            return Response({'error': str(error)}, status=status.HTTP_400_BAD_REQUEST)
 
     @action(detail=False, methods=['get'])
     def active_counsellor(self, request):
@@ -174,31 +182,36 @@ class AppointmentViewSet(viewsets.ModelViewSet):
         return Response(status=status.HTTP_204_NO_CONTENT)
 
     def create(self, request, *args, **kwargs):
-        patient = request.data.get('patient_id')
-        counsellor = request.data.get('counsellor_id')
-        appointment_date = request.data.get('appointment_date')
-        
-        # check if patient and counsellor are active
-        if not Patient.objects.filter(id=patient, is_active=True).exists():
-            return Response({'error': 'Patient is not active'}, status=status.HTTP_400_BAD_REQUEST)
-        if not Counsellor.objects.filter(id=counsellor, is_active=True).exists():
-            return Response({'error': 'Counsellor is not active'}, status=status.HTTP_400_BAD_REQUEST)
-        
-        # check if patient or counsellor already has an appointment date range
-        # if Appointment.objects.filter(patient=patient, is_active=True).exists() and \
-        if datetime.strptime(appointment_date, "%Y-%m-%dT%H:%M:%S%z") <= Appointment.objects.filter(patient=patient).last().appointment_date:
-            return Response({'error': 'Patient already has an active appointment'}, status=status.HTTP_400_BAD_REQUEST)
-        # if Appointment.objects.filter(counsellor=counsellor, is_active=True).exists():
-        if datetime.strptime(appointment_date, "%Y-%m-%dT%H:%M:%S%z") <= Appointment.objects.filter(counsellor=counsellor).last().appointment_date:
-            return Response({'error': 'Counsellor already has an active appointment'}, status=status.HTTP_400_BAD_REQUEST)
+        try:
+            patient = request.data.get('patient_id')
+            counsellor = request.data.get('counsellor_id')
+            appointment_date = request.data.get('appointment_date')
+            
+            # check if patient and counsellor are active
+            if not Patient.objects.filter(id=patient, is_active=True).exists():
+                return Response({'error': 'Patient is not active'}, status=status.HTTP_400_BAD_REQUEST)
+            if not Counsellor.objects.filter(id=counsellor, is_active=True).exists():
+                return Response({'error': 'Counsellor is not active'}, status=status.HTTP_400_BAD_REQUEST)
+            
+            # check if patient or counsellor already has an appointment date range
+            patient_appointments = Appointment.objects.filter(patient=patient,is_active=True)
+            counsellor_appointments = Appointment.objects.filter(counsellor=counsellor,is_active=True)
+            if patient_appointments:
+                if datetime.strptime(appointment_date, "%Y-%m-%dT%H:%M:%S%z") <= Appointment.objects.filter(patient=patient).last().appointment_date:
+                    return Response({'error': 'Patient already has an active appointment'}, status=status.HTTP_400_BAD_REQUEST)
+            if counsellor_appointments:
+                if datetime.strptime(appointment_date, "%Y-%m-%dT%H:%M:%S%z") <= Appointment.objects.filter(counsellor=counsellor).last().appointment_date:
+                    return Response({'error': 'Counsellor already has an active appointment'}, status=status.HTTP_400_BAD_REQUEST)
 
-        serializer = self.get_serializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        patient_obj = Patient.objects.get(id=patient)
-        counsellor_obj = Counsellor.objects.get(id=counsellor)
-        serializer.save(patient=patient_obj,counsellor=counsellor_obj)
-        headers = self.get_success_headers(serializer.data)
-        return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+            serializer = self.get_serializer(data=request.data)
+            serializer.is_valid(raise_exception=True)
+            patient_obj = Patient.objects.get(id=patient)
+            counsellor_obj = Counsellor.objects.get(id=counsellor)
+            serializer.save(patient=patient_obj,counsellor=counsellor_obj)
+            headers = self.get_success_headers(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
+        except Exception as e:
+            return Response({'error': str(e)}, status=status.HTTP_400_BAD_REQUEST)
 
 
 
